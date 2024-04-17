@@ -1,1 +1,1 @@
-# FlappyBirdOptimalControl
+# Flappy Bird Optimal Control
