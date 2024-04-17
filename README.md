@@ -48,14 +48,17 @@ In our second approach, we include a reward for passing in between the obstacle'
 ![reward](https://github.com/jeffxhansen/FlappyBirdOptimalControl/assets/62043475/ee87974a-2816-44c9-9406-58df62a34cdc)
 
 Our endpoint cost function 
+
 $$\begin{align*}
 \phi (y(t_f)) = - \exp\left(\frac{-\left(y(t_f) - \frac{(P_l+P_u)}{2}\right)^2}{\sigma^2}\right)
 \end{align*}$$
+
 is similar to a rotated Gaussian distribution. We set the mean of the Gaussian to be the center location between the pipes $\frac{(P_l+P_u)}{2}$, and we set the variance $\sigma^2$ to a small number ($0.1^2$). This pushes the bird's path between the two pipes without forcing it to end exactly at a certain point; thus, the model adjusts for circumstances in which slightly different endpoints are needed without violating the laws of the model. 
 
 Along with adding an endpoint cost, we also adjust our state equations to remove the $x(t)$ dependence. This not only avoids the `Singular Jacobian Matrix` error, but also simplifies the model for quicker convergence. Our initial state includes a specified vertical position and zero velocity. Our endpoint state incorporates a free variable for the bird's final vertical position. This allows the endpoint incentive to adapt to various game conditions. We also specify zero velocity at the endpoint in order to chain multiple sub-problems together (see the multiple pipes section for an implementation of this). Finally, we add a running cost $\frac{1}{2}u(t)^2$ to our functional to penalize large values of the control in order to simulate the constrained physics of the game.
 
 Our new cost functional and state space are:
+
 $$\begin{align*}
     J[u] &= \int_{t_0}^{t_f} \frac{1}{2}u(t)^2 \, dt - \exp\left(\frac{-\left(y(t_f) - \frac{(P_l+P_u)}{2}\right)^2}{\sigma^2}\right)
 \end{align*}
@@ -63,6 +66,7 @@ $$\begin{align*}
 \begin{align*}
 \mathbf{x}'(t) &= \begin{bmatrix} y(t) \\ y'(t) \end{bmatrix}' =  \begin{bmatrix} y'(t) \\ u(t) - 9.8 \end{bmatrix}, \quad \mathbf{x}(0) = \begin{bmatrix} y_0 \\ 0 \end{bmatrix}, \quad \mathbf{x}(t_f) = \begin{bmatrix} \text{free} \\ 0 \end{bmatrix}
 \end{align*}$$
+
 We demonstrate the solution to this successful system in the following code and figures.
 
 ![trajectory_reward](https://github.com/jeffxhansen/FlappyBirdOptimalControl/assets/62043475/bdc7a7f1-704e-4a63-84f3-1ab70feeecaf)
@@ -77,9 +81,11 @@ In the actual Flappy Bird game, the user can not control the bird with a smooth 
 To accomplish this, we change the running-cost in our functional by penalizing the shape of the control instead of large values of the control. We do this by first engineering a function $f(t)$ that resembles a sequence of taps, and then we add a penalty $W(u(t) - f(t))^2$ to the running cost. This penalizes the control when its shape does not match $f(t)$'s shape for each $t$. We use the continuous function $f(t) = \beta\max\{0, \sin(\alpha t)\}$, which only recognizes the positive portion of the sine wave. By manipulating the amplitude ($\beta$) and the wavelength ($\alpha$) of the sine component, the function results in a continuous series of sharp spikes that simulate discrete taps. 
 
 With these additional adjustments, our final cost functional is:
+
 $$\begin{align*}
     J[u] &= \int_{t_0}^{t_f} W \left[u(t) - \beta \max\{0, \sin(\alpha t)\} \right]^2 \, dt - \exp\left(\frac{-\left(y(t_f) - \frac{(P_l+P_u)}{2}\right)^2}{\sigma^2}\right)
 \end{align*}$$
+
 where the running cost inside the integral guides the control to look like discrete taps, and the endpoint cost acts as a reward when the bird successfully flies through the middle of the pipes.
 
 We define our Hamiltonian as follows:
@@ -88,6 +94,7 @@ $$\begin{align*}
 H = \mathbf{p} \cdot \mathbf{f} - L 
  = p_0 y'(t) + p_1 (u(t) - 9.8) - W\left[u(t) - \beta\max\{0, \sin(\alpha t)\} \right]^2
 \end{align*}$$
+
 The Hamiltonian captures the total energy of the system, taking into account the dynamics of the state variables ($y'$ and $u$) and their conjugate momenta ($p_0$ and $p_1$), as well as the Lagrangian ($L$), which represents our runtime cost.
 
 Following Pontryagin's Maximum Principle, we solve for our costate equations as follows:
@@ -96,6 +103,7 @@ $$\begin{align*}
 p_0' &= -\frac{\partial H}{\partial y} = 0 \\
 p_1' &= -\frac{\partial H}{\partial y'} = -p_0
 \end{align*}$$
+
 The costate equations describe the evolution of the costate variables $p_0$ and $p_1$ over time, reflecting how changes in the Hamiltonian affect their dynamics.
 
 At the final time $t_f$, the costates are given by:
@@ -104,6 +112,7 @@ $$\begin{align*}
 p_0(t_f) &= -\frac{\partial \phi}{\partial y(t_f)} = \left(\frac{-( 2y(t_f) - (P_l+P_u))}{\sigma^2}\right)  \exp\left(\frac{-\left(y(t_f) - \frac{(P_l+P_u)}{2}\right)^2}{\sigma^2}\right) \\
 p_1(t_f) &= \text{free}
 \end{align*}$$
+
 The costates at the final time provide insight into the terminal conditions required for optimal control, with $p_0(t_f)$ encoding the sensitivity of the cost to changes in the final state $y(t_f)$.
 
 Finally, we compute the optimal control input $\tilde{u}$ by maximizing the Hamiltonian with respect to $u$:
