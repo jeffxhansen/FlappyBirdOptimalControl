@@ -61,9 +61,9 @@ Our new cost functional and state space are:
 
 $$\begin{align*}
     J[u] &= \int_{t_0}^{t_f} \frac{1}{2}u(t)^2 \, dt - \exp\left(\frac{-\left(y(t_f) - \frac{(P_l+P_u)}{2}\right)^2}{\sigma^2}\right)
-\end{align*}
+\end{align*}$$
 
-\begin{align*}
+$$\begin{align*}
 \mathbf{x}'(t) &= \begin{bmatrix} y(t) \\ y'(t) \end{bmatrix}' =  \begin{bmatrix} y'(t) \\ u(t) - 9.8 \end{bmatrix}, \quad \mathbf{x}(0) = \begin{bmatrix} y_0 \\ 0 \end{bmatrix}, \quad \mathbf{x}(t_f) = \begin{bmatrix} \text{free} \\ 0 \end{bmatrix}
 \end{align*}$$
 
